@@ -22,6 +22,7 @@ final class StatusItemController: NSObject {
     private let updates: UpdateChecker
     private let openNote: (Note) -> Void
     private var updateObserver: AnyCancellable?
+    private var currentSymbol = "note.text"
 
     init(model: NotesModel, updates: UpdateChecker, openNote: @escaping (Note) -> Void) {
         self.model = model
@@ -53,14 +54,15 @@ final class StatusItemController: NSObject {
         // someone who happened to open the panel and look.
         updateObserver = updates.$state.sink { [weak self] state in
             MainActor.assumeIsolated {
-                guard let button = self?.statusItem.button else { return }
-                if case .available = state {
-                    button.image = NSImage(systemSymbolName: "note.text.badge.plus",
-                                           accessibilityDescription: "NoFormatNotes, update available")
-                } else {
-                    button.image = NSImage(systemSymbolName: "note.text",
-                                           accessibilityDescription: "NoFormatNotes")
-                }
+                guard let self, let button = self.statusItem.button else { return }
+                let wanted: String
+                if case .available = state { wanted = "note.text.badge.plus" } else { wanted = "note.text" }
+                // Only touch the image when the symbol actually changes. Assigning it re-renders and
+                // snapshots the status item layer, which is cheap once and ruinous if something ever
+                // starts publishing frequently.
+                guard wanted != self.currentSymbol else { return }
+                self.currentSymbol = wanted
+                button.image = NSImage(systemSymbolName: wanted, accessibilityDescription: "NoFormatNotes")
                 button.image?.isTemplate = true
             }
         }
