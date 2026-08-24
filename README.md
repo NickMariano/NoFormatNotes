@@ -13,6 +13,10 @@ formatting — without opening an editor, picking a folder, or naming a file.
 
 ## Using it
 
+<p align="center">
+  <img src="docs/panel-empty.png" alt="The panel with no notes yet" width="300">
+</p>
+
 - **Option-click the menu bar icon** for an instant new note. Right-click does the same.
   (Not Command-click: macOS reserves that for dragging menu bar icons around.)
 - **Click the icon** to see your notes. Click one to open it.

@@ -23,9 +23,12 @@ final class NoteWindowController {
             return
         }
 
-        let view = NoteView(noteID: note.id, model: model, onDelete: { [weak self] in
-            self?.close(note.id)
-        })
+        let view = NoteView(
+            noteID: note.id,
+            model: model,
+            onDelete: { [weak self] in self?.close(note.id) },
+            onTitleChange: { [weak self] title in self?.retitle(note.id, to: title) }
+        )
         let hosting = NSHostingController(rootView: view)
         let window = NSWindow(contentViewController: hosting)
         window.title = note.title
@@ -68,6 +71,7 @@ private struct NoteView: View {
     let noteID: UUID
     @ObservedObject var model: NotesModel
     var onDelete: () -> Void
+    var onTitleChange: (String) -> Void
 
     @State private var text: String = ""
     @State private var confirmingDelete = false
@@ -76,6 +80,9 @@ private struct NoteView: View {
         VStack(spacing: 0) {
             PlainTextEditor(text: $text) { updated in
                 model.update(id: noteID, body: updated)
+                // The window title follows the note's first line, so a stack of open notes is
+                // distinguishable. Without this every window stays titled "New Note" forever.
+                onTitleChange(PlainText.title(of: updated))
             }
 
             Divider()
@@ -95,7 +102,10 @@ private struct NoteView: View {
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
         }
-        .onAppear { text = model.note(id: noteID)?.body ?? "" }
+        .onAppear {
+            text = model.note(id: noteID)?.body ?? ""
+            onTitleChange(PlainText.title(of: text))
+        }
         .confirmationDialog("Delete this note?", isPresented: $confirmingDelete) {
             Button("Delete", role: .destructive) {
                 model.delete(id: noteID)
