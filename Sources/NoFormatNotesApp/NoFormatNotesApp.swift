@@ -18,6 +18,7 @@ struct NoFormatNotesApp: App {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var model: NotesModel?
     private var statusItem: StatusItemController?
+    private var updates: UpdateChecker?
     private var windows: NoteWindowController?
 
     nonisolated func applicationDidFinishLaunching(_ notification: Notification) {
@@ -30,11 +31,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let model = NotesModel()
         let windows = NoteWindowController(model: model)
+        let updates = UpdateChecker()
         self.model = model
         self.windows = windows
-        statusItem = StatusItemController(model: model, openNote: { note in
+        self.updates = updates
+        statusItem = StatusItemController(model: model, updates: updates, openNote: { note in
             windows.open(note)
         })
+        updates.checkIfDue()
     }
 
     /// Anything unwritten goes to disk before the process ends.

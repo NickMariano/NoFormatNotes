@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import NoFormatNotesCore
 import SwiftUI
 
@@ -18,10 +19,13 @@ final class StatusItemController: NSObject {
     private let statusItem: NSStatusItem
     private let popover = NSPopover()
     private let model: NotesModel
+    private let updates: UpdateChecker
     private let openNote: (Note) -> Void
+    private var updateObserver: AnyCancellable?
 
-    init(model: NotesModel, openNote: @escaping (Note) -> Void) {
+    init(model: NotesModel, updates: UpdateChecker, openNote: @escaping (Note) -> Void) {
         self.model = model
+        self.updates = updates
         self.openNote = openNote
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         super.init()
@@ -39,11 +43,27 @@ final class StatusItemController: NSObject {
         popover.behavior = .transient
         popover.contentSize = NSSize(width: 300, height: 400)
         popover.contentViewController = NSHostingController(
-            rootView: MenuContent(model: model, openNote: { [weak self] note in
+            rootView: MenuContent(model: model, updates: updates, openNote: { [weak self] note in
                 self?.popover.performClose(nil)
                 openNote(note)
             })
         )
+
+        // The daily check is silent, so without a badge a new version would only ever be seen by
+        // someone who happened to open the panel and look.
+        updateObserver = updates.$state.sink { [weak self] state in
+            MainActor.assumeIsolated {
+                guard let button = self?.statusItem.button else { return }
+                if case .available = state {
+                    button.image = NSImage(systemSymbolName: "note.text.badge.plus",
+                                           accessibilityDescription: "NoFormatNotes, update available")
+                } else {
+                    button.image = NSImage(systemSymbolName: "note.text",
+                                           accessibilityDescription: "NoFormatNotes")
+                }
+                button.image?.isTemplate = true
+            }
+        }
     }
 
     @objc private func clicked() {

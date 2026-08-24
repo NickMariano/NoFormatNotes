@@ -48,6 +48,15 @@ overwrites its bytes first.
 **Notes are not encrypted.** Anyone with access to your unlocked Mac can read them. It is a
 scratchpad, not a password manager.
 
+## Updating
+
+NoFormatNotes checks GitHub for new releases once a day. **Nothing installs itself.** When an update
+exists the menu bar icon shows a badge, and you choose whether to install it.
+
+Installing downloads the image, checks the app inside is signed by the same developer as your copy
+and passes Gatekeeper, then replaces the installed app and relaunches. No password: nothing outside
+`/Applications` is touched.
+
 ## Installing
 
 Download the `.dmg`, open it, drag NoFormatNotes to Applications. Signed and notarized, so no warnings.

@@ -5,6 +5,7 @@ import SwiftUI
 /// The menu bar panel: the list of notes, and the one click that makes a new one.
 struct MenuContent: View {
     @ObservedObject var model: NotesModel
+    @ObservedObject var updates: UpdateChecker
     var openNote: (Note) -> Void
 
     @State private var launchAtLogin = LoginItem.isEnabled
@@ -62,6 +63,25 @@ struct MenuContent: View {
         }
     }
 
+    @ViewBuilder
+    private var updateItems: some View {
+        switch updates.state {
+        case .checking:   Text("Checking for updates...")
+        case .installing: Text("Installing update...")
+        case let .available(version):
+            Button("Install Update \(version)...") { updates.installUpdate() }
+            Button("What's New in \(version)") { updates.openReleasePage() }
+        case .upToDate:
+            Text("Version \(updates.currentVersion) is up to date")
+            Button("Check Again") { updates.check(userInitiated: true) }
+        case let .failed(message):
+            Text("Update check failed: \(message)")
+            Button("Try Again") { updates.check(userInitiated: true) }
+        case .idle:
+            Button("Check for Updates...") { updates.check(userInitiated: true) }
+        }
+    }
+
     private var footer: some View {
         VStack(alignment: .leading, spacing: 6) {
             Toggle("Open at Login", isOn: Binding(
@@ -89,6 +109,14 @@ struct MenuContent: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
+            if case let .available(version) = updates.state {
+                Button { updates.installUpdate() } label: {
+                    Label("Version \(version) is available", systemImage: "arrow.down.circle.fill")
+                        .font(.caption)
+                }
+                .buttonStyle(.link)
+            }
+
             Text("Tip: Option-click or right-click the icon for an instant new note.")
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
@@ -103,6 +131,8 @@ struct MenuContent: View {
                 // Quit stays a plain button. Burying the way out of an app inside a menu is worse
                 // than showing it, and this panel has room.
                 Menu {
+                    updateItems
+                    Divider()
                     Button("Uninstall NoFormatNotes...") { Uninstaller.run(model: model) }
                 } label: {
                     Image(systemName: "ellipsis.circle")
