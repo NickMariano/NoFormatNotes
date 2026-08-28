@@ -92,6 +92,19 @@ private struct NoteView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Spacer()
+                // Quick notes are for things you are about to paste and forget. Occasionally one
+                // turns out to be worth keeping, and this is the one-click path out.
+                if KeepHandoff.isAvailable {
+                    Button {
+                        KeepHandoff.send(text)
+                    } label: {
+                        Label("Keep", systemImage: "tray.and.arrow.down")
+                    }
+                    .controlSize(.small)
+                    .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .help("Move this into SeparateOpinion")
+                }
+
                 Button(role: .destructive) {
                     confirmingDelete = true
                 } label: {
